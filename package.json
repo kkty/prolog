@@ -1,5 +1,8 @@
 {
-   "main": "dist/index.js",
+   "name": "ts-prolog",
+   "bin": {
+      "ts-prolog": "./bin/cli.js"
+   },
    "scripts": {
       "build": "tsc",
       "test": "mocha --recursive --require ts-node/register \"test/**/*.ts\"",
