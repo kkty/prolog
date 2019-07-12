@@ -40,7 +40,7 @@ describe('substitutions can be applied correctly', () => {
 });
 
 describe('can process queries correctly', () => {
-  it('case 1', () => {
+  describe('case 1', () => {
     const z = new Constant('z');
     const add = new Predicate('add');
     const s = new Functor('s');
@@ -76,29 +76,38 @@ describe('can process queries correctly', () => {
 
     const X = new Variable('X');
 
-    // add(s(z), s(s(z)), X)
-    const result = space.query([
-      new Goal(add, [
-        new Application(s, [z]),
-        new Application(s, [new Application(s, [z])]),
-        X,
-      ]),
-    ]);
+    it('case 1-1', () => {
+      // add(s(z), s(s(z)), X)
+      const result = space.query([
+        new Goal(add, [
+          new Application(s, [z]),
+          new Application(s, [new Application(s, [z])]),
+          X,
+        ]),
+      ]);
 
-    // there should be one suitable substituion
-    chai.assert.strictEqual(result.length, 1);
-    chai.assert.strictEqual(Substitution.applyAll(X, result[0]).toString(), 's(s(s(z)))');
+      // there should be one suitable substituion
+      const { done, value: substitutions } = result.next();
+      chai.assert.strictEqual(done, false);
+      chai.assert.strictEqual(Substitution.applyAll(X, substitutions).toString(), 's(s(s(z)))');
+      chai.assert.strictEqual(result.next().done, true);
+    });
 
-    space.query([
+    it('case 1-2', () => {
       // add(X, s(z), s(s(z)))
-      new Goal(add, [
-        X,
-        new Application(s, [z]),
-        new Application(s, [new Application(s, [z])]),
-      ]),
-    ])
-      .map((substitutions) => {
-        console.log('X', Substitution.applyAll(X, substitutions).toString());
-      });
+      const result = space.query([
+        new Goal(add, [
+          X,
+          new Application(s, [z]),
+          new Application(s, [new Application(s, [z])]),
+        ]),
+      ]);
+
+      // there should be one suitable substituion
+      const { done, value: substitutions } = result.next();
+      chai.assert.strictEqual(done, false);
+      chai.assert.strictEqual(Substitution.applyAll(X, substitutions).toString(), 's(z)');
+      chai.assert.strictEqual(result.next().done, true);
+    });
   });
 });

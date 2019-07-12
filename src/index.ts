@@ -228,74 +228,82 @@ export class Space {
     private readonly rules: Rule[],
   ) {}
 
-  query(goals: Goal[]): Substitution[][] {
+  query(goals: Goal[]): Iterator<Substitution[]> {
     type Item = { goals: Goal[], substitutions: Substitution[] };
 
     const queue: Item[] = [
       { goals, substitutions: [] },
     ];
 
-    const ans = [];
+    return {
+      next: () => {
+        while (queue.length) {
+          // this type conversion is valid as queue.length > 0
+          const { goals, substitutions } = queue.shift() as Item;
 
-    while (queue.length) {
-      // this type conversion is valid as queue.length > 0
-      const { goals, substitutions } = queue.shift() as Item;
+          console.error(`goals = [${goals.map(i => i.toString()).join(', ')}], substitutions = [${substitutions.map(i => i.toString()).join(', ')}]`);
 
-      console.error(`goals = [${goals.map(i => i.toString()).join(', ')}], substitutions = [${substitutions.map(i => i.toString()).join(', ')}]`);
-
-      if (goals.length === 0) {
-        ans.push(substitutions);
-      }
-
-      for (const goal of goals) {
-        for (const f of this.facts) {
-          const fact = f.clone();
-
-          if (goal.predicate !== fact.predicate) continue;
-          if (goal.terms.length !== fact.terms.length) continue;
-
-          const constraints = [];
-          for (let i = 0; i < goal.terms.length; i += 1) {
-            constraints.push(new Constraint(Substitution.applyAll(goal.terms[i], substitutions), fact.terms[i]));
+          if (goals.length === 0) {
+            return {
+              done: false,
+              value: substitutions,
+            };
           }
 
-          const substitutionsNew = Constraint.unify(constraints);
+          for (const goal of goals) {
+            for (const f of this.facts) {
+              const fact = f.clone();
 
-          // if unification succeeded, push an item to the queue
-          if (substitutionsNew) {
-            queue.push({
-              // we can drop one goal here
-              goals: goals.filter(i => i !== goal),
-              substitutions: [...substitutions, ...substitutionsNew],
-            });
+              if (goal.predicate !== fact.predicate) continue;
+              if (goal.terms.length !== fact.terms.length) continue;
+
+              const constraints = [];
+              for (let i = 0; i < goal.terms.length; i += 1) {
+                constraints.push(new Constraint(Substitution.applyAll(goal.terms[i], substitutions), fact.terms[i]));
+              }
+
+              const substitutionsNew = Constraint.unify(constraints);
+
+              // if unification succeeded, push an item to the queue
+              if (substitutionsNew) {
+                queue.push({
+                  // we can drop one goal here
+                  goals: goals.filter(i => i !== goal),
+                  substitutions: [...substitutions, ...substitutionsNew],
+                });
+              }
+            }
+
+            for (const r of this.rules) {
+              const rule = r.clone();
+
+              if (goal.predicate !== rule.left.predicate) continue;
+              if (goal.terms.length !== rule.left.terms.length) continue;
+
+              const constraints = [];
+              for (let i = 0; i < goal.terms.length; i += 1) {
+                constraints.push(new Constraint(Substitution.applyAll(goal.terms[i], substitutions), rule.left.terms[i]));
+              }
+
+              const substitutionsNew = Constraint.unify(constraints);
+
+              // if unification succeeded, push an item to the queue
+              if (substitutionsNew) {
+                queue.push({
+                  // replace one goal with new goals
+                  goals: [...goals.filter(i => i !== goal), ...rule.right.map(i => new Goal(i.predicate, i.terms))],
+                  substitutions: [...substitutions, ...substitutionsNew],
+                });
+              }
+            }
           }
         }
 
-        for (const r of this.rules) {
-          const rule = r.clone();
-
-          if (goal.predicate !== rule.left.predicate) continue;
-          if (goal.terms.length !== rule.left.terms.length) continue;
-
-          const constraints = [];
-          for (let i = 0; i < goal.terms.length; i += 1) {
-            constraints.push(new Constraint(Substitution.applyAll(goal.terms[i], substitutions), rule.left.terms[i]));
-          }
-
-          const substitutionsNew = Constraint.unify(constraints);
-
-          // if unification succeeded, push an item to the queue
-          if (substitutionsNew) {
-            queue.push({
-              // replace one goal with new goals
-              goals: [...goals.filter(i => i !== goal), ...rule.right.map(i => new Goal(i.predicate, i.terms))],
-              substitutions: [...substitutions, ...substitutionsNew],
-            });
-          }
-        }
-      }
-    }
-
-    return ans;
+        return {
+          done: true,
+          value: [],
+        };
+      },
+    };
   }
 }
