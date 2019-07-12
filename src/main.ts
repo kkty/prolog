@@ -228,12 +228,21 @@ export class Space {
     private readonly rules: Rule[],
   ) {}
 
-  query(goals: Goal[]): Iterator<Substitution[]> {
+  query(goals: Goal[]): Iterator<Map<Variable, Term>> {
     type Item = { goals: Goal[], substitutions: Substitution[] };
 
     const queue: Item[] = [
       { goals, substitutions: [] },
     ];
+
+    const freeVariables = new Set<Variable>();
+    for (const goal of goals) {
+      for (const term of goal.terms) {
+        listVariables(term).forEach((variable) => {
+          freeVariables.add(variable);
+        });
+      }
+    }
 
     return {
       next: () => {
@@ -241,12 +250,17 @@ export class Space {
           // this type conversion is valid as queue.length > 0
           const { goals, substitutions } = queue.shift() as Item;
 
-          console.error(`goals = [${goals.map(i => i.toString()).join(', ')}], substitutions = [${substitutions.map(i => i.toString()).join(', ')}]`);
+          // console.error(`goals = [${goals.map(i => i.toString()).join(', ')}], substitutions = [${substitutions.map(i => i.toString()).join(', ')}]`);
 
           if (goals.length === 0) {
+            const variableTermMapping = new Map<Variable, Term>();
+            freeVariables.forEach((variable) => {
+              variableTermMapping.set(variable, Substitution.applyAll(variable, substitutions));
+            });
+
             return {
               done: false,
-              value: substitutions,
+              value: variableTermMapping,
             };
           }
 
@@ -301,7 +315,7 @@ export class Space {
 
         return {
           done: true,
-          value: [],
+          value: new Map(),
         };
       },
     };

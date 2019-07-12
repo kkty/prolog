@@ -1,6 +1,6 @@
 import chai from 'chai';
 import 'mocha';
-import { Functor, Constant, Variable, Application, Constraint, Substitution, Predicate, Fact, Rule, Space, Goal } from '../src';
+import { Functor, Constant, Variable, Application, Term, Substitution, Predicate, Fact, Rule, Space, Goal } from '../src/main';
 
 describe('terms can be stringified correctly', () => {
   it('case 1', () => {
@@ -87,9 +87,9 @@ describe('can process queries correctly', () => {
       ]);
 
       // there should be one suitable substituion
-      const { done, value: substitutions } = result.next();
+      const { done, value } = result.next();
       chai.assert.strictEqual(done, false);
-      chai.assert.strictEqual(Substitution.applyAll(X, substitutions).toString(), 's(s(s(z)))');
+      chai.assert.strictEqual((value.get(X) as Term).toString(), 's(s(s(z)))');
       chai.assert.strictEqual(result.next().done, true);
     });
 
@@ -104,9 +104,9 @@ describe('can process queries correctly', () => {
       ]);
 
       // there should be one suitable substituion
-      const { done, value: substitutions } = result.next();
+      const { done, value } = result.next();
       chai.assert.strictEqual(done, false);
-      chai.assert.strictEqual(Substitution.applyAll(X, substitutions).toString(), 's(z)');
+      chai.assert.strictEqual((value.get(X) as Term).toString(), 's(z)');
       chai.assert.strictEqual(result.next().done, true);
     });
   });
