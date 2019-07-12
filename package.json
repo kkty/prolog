@@ -1,0 +1,22 @@
+{
+   "main": "dist/index.js",
+   "scripts": {
+      "build": "tsc",
+      "test": "mocha --recursive --require ts-node/register \"test/**/*.ts\"",
+      "lint": "tslint 'src/**/*.ts' 'test/**/*.ts'",
+      "lint:fix": "npm run lint -- --fix"
+   },
+   "devDependencies": {
+      "@types/chai": "^4.1.7",
+      "@types/mocha": "^5.2.7",
+      "chai": "^4.2.0",
+      "mocha": "^6.1.4",
+      "ts-node": "^8.3.0",
+      "tslint": "^5.18.0",
+      "tslint-config-airbnb": "^5.11.1",
+      "typescript": "^3.5.3"
+   },
+   "dependencies": {
+      "@types/node": "^12.6.2"
+   }
+}
