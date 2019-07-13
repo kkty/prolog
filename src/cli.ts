@@ -1,6 +1,6 @@
 import readline from 'readline';
 
-import { Term, Goal, Rule, Predicate, Variable, Constant, Application, Functor, Fact, Space, Substitution } from './main';
+import { Term, Goal, Rule, Predicate, Variable, Constant, Application, Functor, Fact, Space, Substitution, listVariables } from './main';
 import fs from 'fs';
 
 class Cli {
@@ -170,10 +170,32 @@ class Cli {
   }
 
   parseGoals(s: string): Goal[] {
-    return split(s).map(constructTree).map((tree) => {
+    const goals =  split(s).map(constructTree).map((tree) => {
       const predicate = this.getOrCreatePredicate(tree.value);
       const terms = tree.children.map(i => this.constructTerm(i));
       return new Goal(predicate, terms);
+    });
+
+    // variables sharing the same name are replaced with one instance
+
+    const variables = new Map<string, Variable>();
+    const substitutions: Substitution[] = [];
+
+    for (const goal of goals) {
+      for (const term of goal.terms) {
+        listVariables(term).forEach((variable) => {
+          const replaceWith = variables.get(variable.name);
+          if (replaceWith) {
+            substitutions.push(new Substitution(variable, replaceWith));
+          } else {
+            variables.set(variable.name, variable);
+          }
+        });
+      }
+    }
+
+    return goals.map((goal) => {
+      return new Goal(goal.predicate, goal.terms.map(term => Substitution.applyAll(term, substitutions)));
     });
   }
 }
