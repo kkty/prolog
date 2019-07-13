@@ -6,6 +6,7 @@
    "version": "0.0.1",
    "scripts": {
       "build": "tsc",
+      "dev": "ts-node ./src/cli.ts",
       "test": "mocha --recursive --require ts-node/register \"test/**/*.ts\"",
       "lint": "tslint 'src/**/*.ts' 'test/**/*.ts'",
       "lint:fix": "npm run lint -- --fix",
