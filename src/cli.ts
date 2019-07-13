@@ -109,6 +109,7 @@ class Cli {
       });
   }
 
+  // constants sharing the same name should point to the same instance
   getOrCreateConstant(name: string): Constant {
     const found = this.constants.find(i => i.name === name);
     if (found) return found;
@@ -117,6 +118,7 @@ class Cli {
     return constant;
   }
 
+  // functors sharing the same name should point to the same instance
   getOrCreateFunctor(name: string): Functor {
     const found = this.functors.find(i => i.name === name);
     if (found) return found;
@@ -125,6 +127,7 @@ class Cli {
     return functor;
   }
 
+  // predicates sharing the same name should point to the same instance
   getOrCreatePredicate(name: string): Predicate {
     const found = this.predicates.find(i => i.name === name);
     if (found) return found;
@@ -133,7 +136,7 @@ class Cli {
     return predicate;
   }
 
-  // convert tree into term
+  // convert syntax tree into Term
   constructTerm(node: Node): Term {
     if (node.children.length === 0) {
       if (startsWithUpperCase(node.value)) {
@@ -166,7 +169,7 @@ class Cli {
       }),
     );
 
-    // variables sharing the same name are replaced with one instance
+    // variables sharing the same name should point to the same instance
 
     const variables = new Map<string, Variable>();
     const substitutions: Substitution[] = [];
@@ -206,7 +209,7 @@ class Cli {
     const predicate = this.getOrCreatePredicate(tree.value);
     const terms = tree.children.map(i => this.constructTerm(i));
 
-    // variables sharing the same name are replaced with one instance
+    // variables sharing the same name should point to the same instance
 
     const variables = new Map<string, Variable>();
     const substitutions: Substitution[] = [];
@@ -231,7 +234,7 @@ class Cli {
       return new Goal(predicate, terms);
     });
 
-    // variables sharing the same name are replaced with one instance
+    // variables sharing the same name should point to the same instance
 
     const variables = new Map<string, Variable>();
     const substitutions: Substitution[] = [];
@@ -294,6 +297,8 @@ function split(s: string): string[] {
   return splitted;
 }
 
+// convert string to syntax tree
+// examples of valid input: 'f(X, Y)', 'f(g(X, Y), Z)'
 function constructTree(str: string): Node {
   // remove whitespaces
   const s = str.replace(/ /g, '');
