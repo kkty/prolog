@@ -40,6 +40,7 @@ class Cli {
 
       // the entire search has finished
       if (item.done) {
+        console.log('search finished');
         this.result = null;
         this.prompt();
         return;
@@ -71,7 +72,9 @@ class Cli {
 
         // search finished without any substitutions
         if (item.done) {
+          console.log('search finished');
           this.result = null;
+          this.prompt();
           return;
         }
 
