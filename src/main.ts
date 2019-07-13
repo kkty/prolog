@@ -58,6 +58,10 @@ export class Fact {
     public readonly terms: Term[],
   ) {}
 
+  toString(): string {
+    return `${this.predicate.toString()}(${this.terms.map(i => i.toString()).join(', ')})`;
+  }
+
   // refresh the variables
   clone(): Fact {
     const variables = new Set<Variable>();
@@ -84,6 +88,12 @@ export class Rule {
     public readonly left: { predicate: Predicate, terms: Term[] },
     public readonly right: { predicate: Predicate, terms: Term[] }[],
   ) {}
+
+  toString(): string {
+    const left = `${this.left.predicate.toString()}(${this.left.terms.map(i => i.toString()).join(', ')})`;
+    const right = this.right.map(({ predicate, terms }) => `${predicate.toString()}(${terms.map(i => i.toString()).join(', ')})`);
+    return `${left} :- [${right.join(', ')}]`;
+  }
 
   // refresh the variables
   clone(): Rule {
@@ -140,7 +150,7 @@ export class Substitution {
 
   apply(term: Term): Term {
     if (term instanceof Variable) {
-      if (term === this.variable) return this.apply(this.term);
+      if (term === this.variable) return this.term;
       return term;
     }
 
@@ -230,10 +240,7 @@ export class Space {
 
   query(goals: Goal[]): Iterator<Map<Variable, Term>> {
     type Item = { goals: Goal[], substitutions: Substitution[] };
-
-    const queue: Item[] = [
-      { goals, substitutions: [] },
-    ];
+    const queue: Item[] = [{ goals, substitutions: [] }];
 
     const freeVariables = new Set<Variable>();
     for (const goal of goals) {
@@ -250,13 +257,26 @@ export class Space {
           // this type conversion is valid as queue.length > 0
           const { goals, substitutions } = queue.shift() as Item;
 
-          // console.error(`goals = [${goals.map(i => i.toString()).join(', ')}], substitutions = [${substitutions.map(i => i.toString()).join(', ')}]`);
-
           if (goals.length === 0) {
             const variableTermMapping = new Map<Variable, Term>();
+
             freeVariables.forEach((variable) => {
               variableTermMapping.set(variable, Substitution.applyAll(variable, substitutions));
             });
+
+            // `variableTermMapping.get(...)` should not contain variables
+
+            let isValid = true;
+
+            variableTermMapping.forEach((term, _) => {
+              if (listVariables(term).size > 0) {
+                isValid = false;
+              }
+            });
+
+            if (!isValid) {
+              continue;
+            }
 
             return {
               done: false,
@@ -264,51 +284,52 @@ export class Space {
             };
           }
 
-          for (const goal of goals) {
-            for (const f of this.facts) {
-              const fact = f.clone();
+          const goal = goals[0];
 
-              if (goal.predicate !== fact.predicate) continue;
-              if (goal.terms.length !== fact.terms.length) continue;
+          for (const f of this.facts) {
+            // refresh variables
+            const fact = f.clone();
 
-              const constraints = [];
-              for (let i = 0; i < goal.terms.length; i += 1) {
-                constraints.push(new Constraint(Substitution.applyAll(goal.terms[i], substitutions), fact.terms[i]));
-              }
+            if (goal.predicate !== fact.predicate) continue;
+            if (goal.terms.length !== fact.terms.length) continue;
 
-              const substitutionsNew = Constraint.unify(constraints);
-
-              // if unification succeeded, push an item to the queue
-              if (substitutionsNew) {
-                queue.push({
-                  // we can drop one goal here
-                  goals: goals.filter(i => i !== goal),
-                  substitutions: [...substitutions, ...substitutionsNew],
-                });
-              }
+            const constraints = [];
+            for (let i = 0; i < goal.terms.length; i += 1) {
+              constraints.push(new Constraint(Substitution.applyAll(goal.terms[i], substitutions), fact.terms[i]));
             }
 
-            for (const r of this.rules) {
-              const rule = r.clone();
+            const substitutionsNew = Constraint.unify(constraints);
 
-              if (goal.predicate !== rule.left.predicate) continue;
-              if (goal.terms.length !== rule.left.terms.length) continue;
+            // if unification succeeded, push an item to the queue
+            if (substitutionsNew) {
+              queue.push({
+                goals: goals.slice(1),
+                substitutions: [...substitutions, ...substitutionsNew],
+              });
+            }
+          }
 
-              const constraints = [];
-              for (let i = 0; i < goal.terms.length; i += 1) {
-                constraints.push(new Constraint(Substitution.applyAll(goal.terms[i], substitutions), rule.left.terms[i]));
-              }
+          for (const r of this.rules) {
+            // refresh variables
+            const rule = r.clone();
 
-              const substitutionsNew = Constraint.unify(constraints);
+            if (goal.predicate !== rule.left.predicate) continue;
+            if (goal.terms.length !== rule.left.terms.length) continue;
 
-              // if unification succeeded, push an item to the queue
-              if (substitutionsNew) {
-                queue.push({
-                  // replace one goal with new goals
-                  goals: [...goals.filter(i => i !== goal), ...rule.right.map(i => new Goal(i.predicate, i.terms))],
-                  substitutions: [...substitutions, ...substitutionsNew],
-                });
-              }
+            const constraints = [];
+            for (let i = 0; i < goal.terms.length; i += 1) {
+              constraints.push(new Constraint(Substitution.applyAll(goal.terms[i], substitutions), rule.left.terms[i]));
+            }
+
+            const substitutionsNew = Constraint.unify(constraints);
+
+            // if unification succeeded, push an item to the queue
+            if (substitutionsNew) {
+              queue.push({
+                // replace one goal with new goals
+                goals: [...goals.slice(1), ...rule.right.map(i => new Goal(i.predicate, i.terms))],
+                substitutions: [...substitutions, ...substitutionsNew],
+              });
             }
           }
         }

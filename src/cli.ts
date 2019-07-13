@@ -96,9 +96,11 @@ class Cli {
         if (s.length === 0) return;
         if (s.includes(':-')) {
           const rule = this.parseRule(s);
+          console.log(`rule added: ${rule.toString()}`);
           this.rules.push(rule);
         } else {
           const fact = this.parseFact(s);
+          console.log(`fact added: ${fact.toString()}`);
           this.facts.push(fact);
         }
       });
@@ -147,7 +149,7 @@ class Cli {
   parseRule(s: string): Rule {
     const [left, right] = s.split(':-');
 
-    return new Rule(
+    const rule = new Rule(
       (() => {
         const tree = constructTree(left);
         const predicate = this.getOrCreatePredicate(tree.value);
@@ -160,13 +162,63 @@ class Cli {
         return { predicate, terms };
       }),
     );
+
+    // variables sharing the same name are replaced with one instance
+
+    const variables = new Map<string, Variable>();
+    const substitutions: Substitution[] = [];
+
+    for (const term of rule.left.terms) {
+      listVariables(term).forEach((variable) => {
+        const replaceWith = variables.get(variable.name);
+        if (replaceWith) {
+          substitutions.push(new Substitution(variable, replaceWith));
+        } else {
+          variables.set(variable.name, variable);
+        }
+      });
+    }
+
+    rule.right.map(({ terms }) => {
+      for (const term of terms) {
+        listVariables(term).forEach((variable) => {
+          const replaceWith = variables.get(variable.name);
+          if (replaceWith) {
+            substitutions.push(new Substitution(variable, replaceWith));
+          } else {
+            variables.set(variable.name, variable);
+          }
+        });
+      }
+    });
+
+    return new Rule(
+      { predicate: rule.left.predicate, terms: rule.left.terms.map(term => Substitution.applyAll(term, substitutions)) },
+      rule.right.map(({ predicate, terms }) => ({ predicate, terms: terms.map(term => Substitution.applyAll(term, substitutions)) })),
+    );
   }
 
   parseFact(s: string): Fact {
     const tree = constructTree(s);
     const predicate = this.getOrCreatePredicate(tree.value);
     const terms = tree.children.map(i => this.constructTerm(i));
-    return new Fact(predicate, terms);
+
+    // variables sharing the same name are replaced with one instance
+
+    const variables = new Map<string, Variable>();
+    const substitutions: Substitution[] = [];
+    for (const term of terms) {
+      listVariables(term).forEach((variable) => {
+        const replaceWith = variables.get(variable.name);
+        if (replaceWith) {
+          substitutions.push(new Substitution(variable, replaceWith));
+        } else {
+          variables.set(variable.name, variable);
+        }
+      });
+    }
+
+    return new Fact(predicate, terms.map(i => Substitution.applyAll(i, substitutions)));
   }
 
   parseGoals(s: string): Goal[] {
@@ -194,9 +246,7 @@ class Cli {
       }
     }
 
-    return goals.map((goal) => {
-      return new Goal(goal.predicate, goal.terms.map(term => Substitution.applyAll(term, substitutions)));
-    });
+    return goals.map(goal => new Goal(goal.predicate, goal.terms.map(term => Substitution.applyAll(term, substitutions))));
   }
 }
 
