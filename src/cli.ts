@@ -19,6 +19,7 @@ class Cli {
     });
 
     this.rl.on('line', line => this.handleUserInput(line));
+    this.rl.on('SIGINT', () => this.handleSigint());
 
     this.prompt();
   }
@@ -27,15 +28,19 @@ class Cli {
     this.rl.prompt();
   }
 
+  handleSigint() {
+    if (!this.result) {
+      process.exit();
+    }
+
+    // stop searching even if it has not completed
+
+    this.result = null;
+    this.prompt();
+  }
+
   handleUserInput(line: string) {
     if (this.result) {
-      // stop searching
-      if (line.endsWith(';')) {
-        this.result = null;
-        this.prompt();
-        return;
-      }
-
       const item = this.result.next();
 
       // the entire search has finished
@@ -91,10 +96,7 @@ class Cli {
 
   // load rules and facts from file
   loadFile(filePath: string) {
-    fs.readFileSync(filePath)
-      .toString()
-      .split('.')
-      .map(i => i.trim())
+    fs.readFileSync(filePath).toString().split('.').map(i => i.trim())
       .forEach((s) => {
         if (s.length === 0) return;
         if (s.includes(':-')) {
