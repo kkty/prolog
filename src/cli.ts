@@ -51,7 +51,7 @@ class Cli {
         return;
       }
 
-      console.log(Array.from(item.value).map(i => `${i[0].toString()} -> ${i[1].toString()}`).join(', '));
+      process.stdout.write(`[${Array.from(item.value).map(i => `${i[0].toString()} -> ${i[1].toString()}`).join(', ')}]`);
 
       return;
     }
@@ -83,7 +83,7 @@ class Cli {
           return;
         }
 
-        console.log(Array.from(item.value).map(i => `${i[0].toString()} -> ${i[1].toString()}`).join(', '));
+        process.stdout.write(`[${Array.from(item.value).map(i => `${i[0].toString()} -> ${i[1].toString()}`).join(', ')}]`);
       }
     } catch (e) {
       console.error(e);
