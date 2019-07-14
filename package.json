@@ -10,7 +10,7 @@
    "bin": {
       "ts-prolog": "./bin/cli.js"
    },
-   "version": "0.0.2",
+   "version": "0.0.4",
    "scripts": {
       "build": "tsc",
       "dev": "ts-node ./src/cli.ts",
@@ -19,6 +19,10 @@
       "lint:fix": "npm run lint -- --fix",
       "postinstall": "npm run build"
    },
+   "dependencies": {
+      "typescript": "^3.5.3",
+      "@types/node": "^12.6.2"
+   },
    "devDependencies": {
       "@types/chai": "^4.1.7",
       "@types/mocha": "^5.2.7",
@@ -26,10 +30,6 @@
       "mocha": "^6.1.4",
       "ts-node": "^8.3.0",
       "tslint": "^5.18.0",
-      "tslint-config-airbnb": "^5.11.1",
-      "typescript": "^3.5.3"
-   },
-   "dependencies": {
-      "@types/node": "^12.6.2"
+      "tslint-config-airbnb": "^5.11.1"
    }
 }
