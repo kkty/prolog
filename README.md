@@ -7,7 +7,7 @@ An implementation of Prolog in TypeScript.
 ### Usage
 
 ```console
-$ npm install ts-prolog
+$ npm install ts-prolog -g
 $ ts-prolog
 ```
 
