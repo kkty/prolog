@@ -1,9 +1,16 @@
 {
    "name": "ts-prolog",
+   "description": "An implementation of Prolog in TypeScript",
+   "repository": {
+      "type": "git",
+      "url": "git+ssh://git@github.com/kkty/prolog"
+   },
+   "author": "Kazushi Kitaya <kazushikitaya@gmail.com>",
+   "license": "MIT",
    "bin": {
       "ts-prolog": "./bin/cli.js"
    },
-   "version": "0.0.1",
+   "version": "0.0.2",
    "scripts": {
       "build": "tsc",
       "dev": "ts-node ./src/cli.ts",
